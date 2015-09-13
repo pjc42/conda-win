@@ -1,0 +1,129 @@
+#!/bin/bash
+
+# pjc 2015.09.09
+# adapted from activate.sh on conda OSX and activate.bat on WIN
+# this script has to do what is in activate.bat in sh bash cmds so that
+# you can activate and deactivate conda envs via gitbash shell on wins
+
+# Ensure that this script is sourced, not executed
+# Also note that errors are ignored as `activate foo` doesn't generate a bad
+# value for $0 which would cause errors.
+
+
+function sh-activate() {
+    # activates a conda environment on Windows using gitbash
+    if [[ $# < 1 ]] ; then
+        echo "Usage: sh-activate envname"
+        exit 1
+    fi
+
+    # get target env name as first arg to sh-activate func
+    target_envname="$1"
+
+    # assumes that path_anaconda3 is set
+    anacondaInstallPath=$path_anaconda3
+
+    # build anaconda env path
+    anaconda_envs=$anacondaInstallPath + '/envs'
+
+    # build abs path to new env
+    anaconda_target_env_path=$anaconda_envs + '/${target_envname}'
+
+    # test if valid conda env
+    if [[ ! -f "$anaconda_target_env_path/python.exe"  ]]; then
+        echo "ERROR: ${FUNCNAME}, invalid environment name"
+        echo "No environment named ${target_envname} exists in ${anaconda_envs}"
+        echo "Usage: sh-activate envname"
+        exit 1
+    fi
+
+    # test if an existing env is active
+    # assumes CONDA_CURRENT_ENV contains name of env if active
+    if [[ ! -z "$CONDA_CURRENT_ENV" ]]; then
+        # CONDA_CURRENT_ENV contains a value so we need to sh-deactivate it
+        sh-deactivate
+    fi
+
+    CONDA_CURRENT_ENV=anaconda_target_env
+    echo "Activating environment ${CONDA_CURRENT_ENV}..."
+    # save the current path as the CONDA_BASE_PATH
+    CONDA_BASE_PATH=$PATH
+    # prepend the target env to front of existing path, CONDA_BASE_PATH
+    PATH="${anaconda_target_env_path};${anaconda_target_env_path}/Scripts;${CONDA_BASE_PATH}"
+
+    export CONDA_CURRENT_ENV
+    export CONDA_BASE_PATH
+
+
+
+
+
+}
+
+
+
+# Load common functions
+get_dirname() {
+    echo "$(cd "$(dirname "$1")" && pwd)"
+}
+
+run_scripts() {
+    _PREFIX="$(echo $(echo $PATH | awk -F ':' '{print $1}')/..)"
+    _CONDA_D="${_PREFIX}/etc/conda/$1.d"
+    if [[ -d $_CONDA_D ]]; then
+        for f in $(find $_CONDA_D -name "*.sh"); do source $f; done
+    fi
+}
+
+# http://stackoverflow.com/a/21188136/161801
+get_abs_filename() {
+    echo "$(get_dirname "$1")/$(basename "$1")"
+}
+
+if "$_THIS_DIR/conda" ..checkenv "$@"; then
+    # Ensure we deactivate any scripts from the old env
+    run_scripts "deactivate"
+
+    _NEW_PATH=$("$_THIS_DIR/conda" ..deactivate)
+    export PATH=$_NEW_PATH
+    if (( $("$_THIS_DIR/conda" ..changeps1) )); then
+        if [[ -n $CONDA_OLD_PS1 ]]; then
+            PS1=$CONDA_OLD_PS1
+            unset CONDA_OLD_PS1
+        fi
+    fi
+else
+    return 1
+fi
+
+_NEW_PATH=$("$_THIS_DIR/conda" ..activate "$@")
+if (( $? == 0 )); then
+    export PATH=$_NEW_PATH
+    # If the string contains / it's a path
+    if [[ "$@" == */* ]]; then
+        export CONDA_DEFAULT_ENV=$(get_abs_filename "$@")
+    else
+        export CONDA_DEFAULT_ENV="$@"
+    fi
+
+    export CONDA_ENV_PATH=$(get_dirname $_THIS_DIR)
+
+    if (( $("$_THIS_DIR/conda" ..changeps1) ));  then
+            CONDA_OLD_PS1="$PS1"
+            PS1="($CONDA_DEFAULT_ENV)$PS1"
+    fi
+else
+    return $?
+fi
+
+# Load any of the scripts found $PREFIX/etc/conda/activate.d
+run_scripts "activate"
+
+if [[ -n $BASH_VERSION ]]; then
+    hash -r
+elif [[ -n $ZSH_VERSION ]]; then
+    rehash
+else
+    echo "Only bash and zsh are supported"
+    return 1
+fi
