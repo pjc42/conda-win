@@ -8,8 +8,6 @@
         activate <conda-envname>
         deactivate
 
-    these functions take precendence over .bat files provided in conda with same name
-
     uses three globals
 
         $env:CONDA_CURRENT_ENV   this is the name of the current conda env
@@ -19,10 +17,7 @@
 
     use as a module and import as part of powershell_profile or similar
 
-        Import-Module -Global <abs path to module>\PSConda.psm1
-
-    can use as script file, see PSConda.ps1 as example, the same except 
-    for Export-ModuleMember statements so just maintaining PSConda.psm1
+    these functions take precendence over .bat files provided in conda
 
 ##################################################################################>
 
@@ -43,6 +38,9 @@ function activate() {
     # build abs path to new env
     $anaconda_target_env_path = $anaconda_envs + "\$target_envname"
 
+    println $anaconda_target_env_path
+
+
     # test if target_envname is a valid env
     if (-not (test-path  $anaconda_target_env_path\Python.exe)) {
     write-host
@@ -59,12 +57,14 @@ function activate() {
         println 'deactivate called'
     }
 
+
     $env:CONDA_CURRENT_ENV = $target_envname
     write-host
     write-host "Activating environment $env:CONDA_CURRENT_ENV ..."
     write-host "CONDA_CURRENT_ENV: $env:CONDA_CURRENT_ENV"
     $env:CONDA_BASE_PATH = $env:PATH
     $env:PATH="$anaconda_target_env_path;$anaconda_target_env_path\Scripts\;$env:CONDA_BASE_PATH"
+
    
     write-host
     write-host
@@ -133,11 +133,8 @@ function deactivate() {
 }
 
 
-# this is a module not a script (.psm1 not .ps1) so must export any functions you 
-# want to be visible in the PS env
+# this is a module not a script (.psm1) so must export any functions you want in env
 Export-ModuleMember -Function activate, deactivate
 
-# loading info for startup script
-write-host 'PSConda.psm1 loaded ...'
-
+Write-Host "PSConda.psm1 loaded ..."
 

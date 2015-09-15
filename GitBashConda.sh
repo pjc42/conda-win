@@ -20,10 +20,15 @@
 
 # Ensure that this script is sourced, not executed
 
+
+
 function activate() {
     # activates a conda environment on Windows using gitbash
+    echo ""
+
     if [[ $# < 1 ]] ; then
         echo "Usage: sh-activate envname"
+        echo
         return 1
     fi
 
@@ -75,7 +80,9 @@ function activate() {
 
     echo "  CONDA_CURRENT_ENV= ${CONDA_CURRENT_ENV}"
     # echo "CONDA_BASE_PATH ${CONDA_BASE_PATH}"
-    # echo "CONDA_BASE_PS1 ${CONDA_BASE_PS1}"   
+    # echo "CONDA_BASE_PS1 ${CONDA_BASE_PS1}"  
+    echo
+    echo 
 
 }
 
@@ -84,6 +91,7 @@ function activate() {
 function deactivate() {
     # deactivates a conda environment on Windows using gitbash
 
+    echo
     echo "Deactivating environment ${CONDA_CURRENT_ENV} ..."
     # echo "Will attempt rollback unset CONDA_CURRENT_ENV, CONDA_BASE_PATH, CONDA_BASE_PS1"
 
@@ -128,6 +136,9 @@ function deactivate() {
         echo "  rolled back PS1, unset CONDA_BASE_PS1"         
     fi
 
+    echo
+    echo
+    
 }
 
 
@@ -173,3 +184,5 @@ function activate-list() {
 export -f activate
 export -f deactivate
 export -f activate-list
+
+load_msg "GitBashConda"
